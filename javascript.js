@@ -5,14 +5,15 @@ let currentCity = "Memphis";
 let currentState = "TN";
 let currentLat = 35.15;
 let currentLong = -90.05;
+let currentOffset = 0;
 
 // start the page with weather for Memphis, TN
-update(currentCity, currentState, currentLat, currentLong);
+update(currentCity, currentState, currentLat, currentLong, currentOffset);
 
 // update the weather every 15 minutes
 setInterval(
   function() {
-    update(currentCity, currentState, currentLat, currentLong);
+    update(currentCity, currentState, currentLat, currentLong, currentOffset);
   },
   15*60000);
 
@@ -21,8 +22,8 @@ let form = document.getElementById("form");
 form.addEventListener("submit", getPlace);
 
 // update everything on the page
-function update(city, state, lat, long) {
-  displayDate();
+function update(city, state, lat, long, offset) {
+  displayDate(offset);
   displayLocation(city, state);
   getWeather(lat, long);
 }
@@ -47,13 +48,15 @@ function getPlace(event) {
       error.textContent = "City not found.";
     } else {
       // display the date and location, and fetch weather
-      displayDate();
+      let offset = data.timezone;
+      displayDate(offset);
       displayLocation(city, state);
       let lon = data.coord.lon;
       let lat = data.coord.lat;
       getWeather(lat, lon);
 
       // update current city so that the refresh shows that information
+      currentOffset = offset;
       currentCity = city;
       currentState = state;
       currentLong = lon;
@@ -86,7 +89,7 @@ function getWeather(lat, lon) {
   }).then((data) => {
     // act on the data
     currentTemp(data.current);
-    displayForecast(data.daily);
+    displayForecast(data.daily, data.timezone_offset);
   });
 }
 
@@ -108,7 +111,7 @@ function currentTemp(current) {
 
 // getplace() -> getWeather -> displayForecast
 // display the 7-day temperatures for a place
-function displayForecast(daily) {
+function displayForecast(daily, offset) {
   let currentHigh = document.getElementById("current-high");
   let currentLow = document.getElementById("current-low");
 
@@ -119,13 +122,13 @@ function displayForecast(daily) {
   currentLow.textContent = Math.round(low);
 
   for (let i = 1; i < 7; i++) {
-    displayDaily(daily[i], i);
+    displayDaily(daily[i], i, offset);
   } 
 }
 
 // getPlace() -> getWeather -> displayForecast -> displayDaily
 // display the one-day forecast for a place
-function displayDaily(cast, index) {
+function displayDaily(cast, index, offset) {
   let card = document.getElementById(`day-${index}`);
   let date = card.getElementsByClassName("date")[0];
   let min = card.getElementsByClassName("min")[0];
@@ -133,22 +136,10 @@ function displayDaily(cast, index) {
   let sunrise = card.getElementsByClassName("sunrise")[0];
   let sunset = card.getElementsByClassName("sunset")[0];
 
-  let currentTime = new Date((cast.dt)*1000);
-  let currentDate = currentTime.toLocaleDateString('en-US', 
-  { weekday: 'long', month: 'numeric', day: 'numeric' }
-  );
-  let sunup = new Date((cast.sunrise)*1000).toLocaleTimeString("en-US",
-  {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
-  let sundown = new Date((cast.sunset)*1000).toLocaleTimeString("en-US",
-  {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true
-  });
+  let utc = cast.dt;
+  let currentDate = formatWeekday(offset, utc);
+  let sunup = formatWeektime(offset, cast.sunrise);
+  let sundown = formatWeektime(offset, cast.sunset);
 
   date.textContent = currentDate;
   min.textContent = Math.round(cast.temp.min);
@@ -157,10 +148,29 @@ function displayDaily(cast, index) {
   sunset.textContent = sundown;
 }
 
-// display the current date and time
-function displayDate() {
-  let date = document.getElementById("date");
+// display correct time zone date and time
+function convertDate(offset = 0, utc = 0) {
   var d = new Date();
+
+  if (offset !== 0 && utc === 0) {
+    // current nonlocal time
+    utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+    d = new Date(utc + 1000 * offset);
+  } else if (offset !== 0 && utc !== 0) {
+    // sunrise/sunset
+    let shift = 1000 * offset + (d.getTimezoneOffset() * 60000);
+    d = new Date(utc * 1000 + shift);
+  }
+
+  return d;
+
+}
+
+function displayDate(offset) {
+  let date = document.getElementById("date");
+
+  let d = convertDate(offset);
+
   formattedDate = d.toLocaleString("en-US" , {
     weekday: "long",
     month: "numeric",
@@ -169,5 +179,27 @@ function displayDate() {
     minute:"2-digit",
     hour12: true
   });
+
   date.textContent = formattedDate;
+}
+
+function formatWeekday(offset, utc) {
+  let d = convertDate(offset, utc);
+
+  return d.toLocaleString("en-US", {
+    weekday: 'long',
+    month: 'numeric',
+    day: 'numeric'
+  });
+}
+
+function formatWeektime(offset, utc) {
+  let d = convertDate(offset, utc);
+
+  return d.toLocaleTimeString("en-US",
+  {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
 }
