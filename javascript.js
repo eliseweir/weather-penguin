@@ -31,12 +31,11 @@ function update(city, state, lat, long, offset) {
 // fetch the lat/long and time offset for a location,
 // then display the weather for that place
 function getPlace(event) {
-  let error = document.getElementById("error");
-  error.textContent = "";
   
   // get the city and state from user input
-  let city = form.elements[0].value;
-  let state = form.elements[1].value;
+  let cityField = document.getElementById("city");
+  let city = cityField.value;
+  let state = document.getElementById("state").value;
 
   // call the API for the city and state
   fetch(`${URI}weather?q=${city},${state},US&appid=${KEY}`)
@@ -45,9 +44,10 @@ function getPlace(event) {
   }).then((data) => {
     // if the city is not found, display a message
     if (data.message === "city not found") {
-      error.textContent = "City not found.";
+      cityField.className = "form-control is-invalid";
     } else {
       // display the date and location, and fetch weather
+      cityField.className = "form-control";
       let offset = data.timezone;
       displayDate(offset);
       displayLocation(city, state);
@@ -64,8 +64,7 @@ function getPlace(event) {
     }
   });
   
-  // clear out the form and prevent the page from reloading
-  form.elements[0].value = "";
+  // prevent the page from reloading
   event.preventDefault();
 }
 

@@ -30,7 +30,7 @@ body {
 #banner {
   display: flex;
   flex-direction: column;
-  justify-content: space-around;
+  justify-content: center;
 }
 
 #title {
@@ -44,20 +44,24 @@ body {
 
 .form {
   display: flex;
-  justify-content: center;
   align-items: center;
 }
 
+form {
+  margin: 1rem 0.5rem;
+}
+
+#submit {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;"
+}
+
 .submit {
-  margin: 0 auto;
   background-color: #3a301b;
   color: white;
 }
 
-#error{
-  padding: 1rem;
-  color: red;
-}
 
 #current .list-group-item {
   background-image: linear-gradient(to right, #cf4327, #e5a024);
@@ -95,8 +99,9 @@ body {
   color: #3a301b;
 }
 
+
 @media only screen and (min-width: 1300px) {
   * {
-    font-size: 30px;
+    font-size: 20px;
   }
 }
